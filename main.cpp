@@ -102,7 +102,7 @@ float randFloat() {
 
 }
 
-void updateImage(float* dataTrail, unsigned char* dataTrailRender) {
+void makeRenderImage(float* dataTrail, unsigned char* dataTrailRender) {
     auto cols = RunConfiguration::Environment::width;
     auto rows = RunConfiguration::Environment::height;
 
@@ -306,7 +306,7 @@ int main()
 
         move(agents, squareTaken, dataTrailCurrent);
         sense(agents, dataTrailCurrent);
-        updateImage(dataTrailCurrent, dataTrailRender);
+        makeRenderImage(dataTrailCurrent, dataTrailRender);
 
         cv::imshow(windowId, imgTrail);
 

@@ -9,6 +9,9 @@ constexpr double PI = 3.14159265358979323846;
 constexpr float deg2rad(float deg) { return PI * deg / 180.0f; }
 
 struct RunConfiguration {
+    struct Hardware {
+        static const bool onlyCpu = true;
+    };
     struct Environment {
         static const unsigned int width = 200;
         static const unsigned int height = 200;

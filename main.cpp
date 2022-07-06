@@ -54,13 +54,12 @@ int main()
     int width = RunConfiguration::Environment::width;
     RunStatistics stats;
     SlimeMold* slimeMold;
-    bool runOpenCl = true;
 
-    if (runOpenCl) {
-        slimeMold = new SlimeMoldOpenCl();
+    if (RunConfiguration::Hardware::onlyCpu) {
+        slimeMold = new SlimeMoldCpu();
     }
     else {
-        slimeMold = new SlimeMoldCpu();
+        slimeMold = new SlimeMoldOpenCl();
     }
 
     cv::Mat imgTrail = cv::Mat(height, width, CV_8UC1, slimeMold->getDataTrailRender());

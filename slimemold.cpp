@@ -1,6 +1,7 @@
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <chrono>
 #include <boost/compute.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -16,7 +17,7 @@ struct RunConfiguration {
         static constexpr float diffusionDecay = 0.1f;
         static const unsigned int populationSize() { return width*height*populationSizeRatio; }
     private:
-        static constexpr float populationSizeRatio = 0.05;
+        static constexpr float populationSizeRatio = 0.15;
     };
     struct Agent {
         static constexpr float sensorAngle = deg2rad(22.5f);
@@ -45,6 +46,48 @@ struct Agent {
     float x;
     float y;
     float direction; // Radians
+};
+
+class RunStatistics {
+public:
+    RunStatistics()  {
+        lastUpdate = std::chrono::system_clock::now();
+        numSteps = 0;
+        framesSinceLastUpdate = 0;
+        fps = 0.0f;
+    }
+
+    void update() {
+        numSteps++;
+        framesSinceLastUpdate++;
+        std::chrono::duration<float> timeSinceLastUpdateS = std::chrono::system_clock::now() - lastUpdate;
+        if (timeSinceLastUpdateS.count() > updateFpsIntervalS) {
+            fps = framesSinceLastUpdate / timeSinceLastUpdateS.count();
+            lastUpdate = std::chrono::system_clock::now();
+            framesSinceLastUpdate = 0;
+        }
+    }
+
+    float getFps() const {
+        return fps;
+    }
+
+    int getSteps() const {
+        return numSteps;
+    }
+
+    // Update this to return a proper report
+    std::string getStatusString() {
+        return std::to_string(numSteps);
+        //return "Steps: " + std::to_string(numSteps) + " FPS: " + std::to_string(fps);
+    }
+
+private:
+    int numSteps;
+    const float updateFpsIntervalS = 0.5f;
+    int framesSinceLastUpdate;
+    std::chrono::time_point<std::chrono::system_clock> lastUpdate;
+    float fps;
 };
 
 std::uniform_real_distribution<float> floatDist(0.0f, 1.0f);
@@ -163,8 +206,53 @@ void sense(std::vector<Agent>& agents, float* dataTrail) {
     }
 }
 
+void diffusion(float* dataTrailSource, float* dataTrailDest) {
+    const auto cols = RunConfiguration::Environment::width;
+    const auto rows = RunConfiguration::Environment::height;
+    const int kernelSize = RunConfiguration::Environment::diffusionKernelSize;
+
+    for (int col = 0; col < cols; col++) {
+        for (int row = 0; row < rows; row++) {
+            auto idxDest = xyToSlimeArrayIdx(col, row);
+            float chemo = 0.0f;
+            int numSquares = 0;
+            auto s = col - kernelSize / 2;
+            auto ss = col + kernelSize / 2;
+            for (int xd = col - kernelSize / 2; xd <= col + kernelSize / 2; xd++) {
+                if (xd >= 0 && xd < cols) {
+                    for (int yd = row - kernelSize / 2; yd <= row + kernelSize / 2; yd++) {
+                        if (yd >= 0 && yd < rows) {
+                            auto idxSrc = xyToSlimeArrayIdx(xd, yd);
+                            numSquares++;
+                            chemo += dataTrailSource[idxSrc];
+                        }
+                    }
+                }
+            }
+            dataTrailDest[idxDest] = chemo / numSquares;
+        }
+    }
+}
+
+void decay(float* dataTrail) {
+    const auto numIndices = RunConfiguration::Environment::width * RunConfiguration::Environment::height;
+    const auto decay = RunConfiguration::Environment::diffusionDecay;
+
+    for (int i = 0; i < numIndices; i++) {
+        dataTrail[i] = clamp<float>(0.0f, 255.999f, dataTrail[i] - decay);
+    }
+}
+
+void swap(float*& f1, float*& f2) {
+    float* f3 = f1;
+    f1 = f2;
+    f2 = f3;
+}
+
 int main()
 {
+    const std::string windowId = "SomeID";
+
     // get the default compute device
     compute::device gpu = compute::system::default_device();
 
@@ -201,30 +289,42 @@ int main()
     const int imgWidth = RunConfiguration::Environment::width;
     const int imgHeight = RunConfiguration::Environment::height;
     unsigned char* data = new unsigned char[imgWidth * imgHeight];
-    float* dataTrail = new float[imgWidth * imgHeight];
+    float* dataTrailCurrent = new float[imgWidth * imgHeight];
+    float* dataTrailNext = new float[imgWidth * imgHeight];
     unsigned char* dataTrailRender = new unsigned char[imgWidth * imgHeight];
     bool* squareTaken = new bool[imgWidth * imgHeight];
     auto img = cv::Mat(imgHeight, imgWidth, CV_8UC1, data);
     auto imgTrail = cv::Mat(imgHeight, imgWidth, CV_8UC1, dataTrailRender);
 
     auto agents = initAgents();
+    RunStatistics stats;
 
     while (!done) {
-        move(agents, squareTaken, dataTrail);
-        sense(agents, dataTrail);
-        updateImage(dataTrail, dataTrailRender);
+        diffusion(dataTrailCurrent, dataTrailNext);
 
-        cv::imshow("SlimeMold", imgTrail);
+        std::swap(dataTrailCurrent, dataTrailNext);
+        decay(dataTrailCurrent);
+
+        move(agents, squareTaken, dataTrailCurrent);
+        sense(agents, dataTrailCurrent);
+        updateImage(dataTrailCurrent, dataTrailRender);
+
+        cv::imshow(windowId, imgTrail);
 
         auto kc = cv::waitKey(10);
 
         if (kc == 27) {
             done = true;
         }
+
+        stats.update();
+
+        cv::setWindowTitle(windowId, stats.getStatusString());
     }
 
     delete[] data;
-    delete[] dataTrail;
+    delete[] dataTrailCurrent;
+    delete[] dataTrailNext;
     delete[] dataTrailRender;
     delete[] squareTaken;
 

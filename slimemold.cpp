@@ -101,6 +101,7 @@ float randFloat() {
     return floatDist(engine);
 
 }
+
 void updateImage(float* dataTrail, unsigned char* dataTrailRender) {
     auto cols = RunConfiguration::Environment::width;
     auto rows = RunConfiguration::Environment::height;
@@ -216,8 +217,6 @@ void diffusion(float* dataTrailSource, float* dataTrailDest) {
             auto idxDest = xyToSlimeArrayIdx(col, row);
             float chemo = 0.0f;
             int numSquares = 0;
-            auto s = col - kernelSize / 2;
-            auto ss = col + kernelSize / 2;
             for (int xd = col - kernelSize / 2; xd <= col + kernelSize / 2; xd++) {
                 if (xd >= 0 && xd < cols) {
                     for (int yd = row - kernelSize / 2; yd <= row + kernelSize / 2; yd++) {
@@ -289,8 +288,8 @@ int main()
     const int imgWidth = RunConfiguration::Environment::width;
     const int imgHeight = RunConfiguration::Environment::height;
     unsigned char* data = new unsigned char[imgWidth * imgHeight];
-    float* dataTrailCurrent = new float[imgWidth * imgHeight];
-    float* dataTrailNext = new float[imgWidth * imgHeight];
+    float* dataTrailCurrent = new float[imgWidth * imgHeight]();
+    float* dataTrailNext = new float[imgWidth * imgHeight]();
     unsigned char* dataTrailRender = new unsigned char[imgWidth * imgHeight];
     bool* squareTaken = new bool[imgWidth * imgHeight];
     auto img = cv::Mat(imgHeight, imgWidth, CV_8UC1, data);

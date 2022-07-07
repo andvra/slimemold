@@ -9,16 +9,50 @@ SlimeMoldOpenCl::SlimeMoldOpenCl() : SlimeMold() {
     queue = compute::command_queue(ctx, gpu);
 
     loadKernels();
+    loadAgents();
+    loadConfig();
 
     int width = RunConfiguration::Environment::width;
     int height = RunConfiguration::Environment::height;
     dataTrailCurrent = compute::vector<float>(width * height, ctx);
 }
 
+void addCustomTypes(std::string& source) {
+    source = compute::type_definition<Agent>() + "\n" + source;
+    source = compute::type_definition<RunConfigurationCl>() + "\n" + source;
+}
+
+void SlimeMoldOpenCl::loadConfig() {
+    RunConfigurationCl hostConfig;
+    std::vector<RunConfigurationCl> hostConfigs(1);
+
+    hostConfigs[0] = hostConfig;
+
+    config = compute::vector<RunConfigurationCl>(1, ctx);
+
+    compute::copy(hostConfigs.begin(), hostConfigs.end(), config.begin(), queue);
+}
+
+void SlimeMoldOpenCl::loadAgents() {
+    auto cpuAgents = initAgents();
+    
+    agents = compute::vector<Agent>(cpuAgents.size(), ctx);
+
+    compute::copy(
+        cpuAgents.begin(), cpuAgents.end(), agents.begin(), queue
+    );
+}
+
 void SlimeMoldOpenCl::loadKernels() {
     auto kernelSource = Utils::Files::readAllFile("kernels.cl");
+    
+    addCustomTypes(kernelSource);
+
     compute::program program = compute::program::build_with_source(kernelSource, ctx);
-    kernelDiffuse = compute::kernel(program, "diffuse");
+
+    kernels["diffuse"] = compute::kernel(program, "diffuse");
+    kernels["clear"] = compute::kernel(program, "clear");
+    kernels["move"] = compute::kernel(program, "move");
 }
 
 void SlimeMoldOpenCl::diffusion() {
@@ -31,11 +65,31 @@ void SlimeMoldOpenCl::diffusion() {
     //   based on a variable set in the swap() function. See if it's simple to switch to pointers on device?
     //  Otherwise, just keep a bool to say which is current and which is next.
 
-    compute::vector<float> constants(1, ctx);
-    constants[0] = rand() % 10;
-    kernelDiffuse.set_arg(0, dataTrailCurrent.get_buffer());
-    kernelDiffuse.set_arg(1, constants.get_buffer());
-    queue.enqueue_1d_range_kernel(kernelDiffuse, 0, 200 * 200, 0);
+    //compute::kernel& kernelDiffuse = kernels["diffuse"];
+
+    //compute::vector<float> constants(1, ctx);
+    //constants[0] = rand() % 10;
+    //kernelDiffuse.set_arg(0, dataTrailCurrent.get_buffer());
+    //kernelDiffuse.set_arg(1, constants.get_buffer());
+    //queue.enqueue_1d_range_kernel(kernelDiffuse, 0, 200 * 200, 0);
+
+}
+
+void SlimeMoldOpenCl::move() {
+    int numPixels = RunConfiguration::Environment::width * RunConfiguration::Environment::height;
+    int numAgents = RunConfiguration::Environment::populationSize();
+    compute::kernel& kernelClear = kernels["clear"];
+
+    kernelClear.set_arg(0, dataTrailCurrent.get_buffer());
+    queue.enqueue_1d_range_kernel(kernelClear, 0, numPixels, 0);
+
+    compute::kernel& kernelMove = kernels["move"];
+
+    kernelMove.set_arg(0, config.get_buffer());
+    kernelMove.set_arg(1, dataTrailCurrent.get_buffer());
+    kernelMove.set_arg(2, agents.get_buffer());
+
+    queue.enqueue_1d_range_kernel(kernelMove, 0, numAgents, 0);
 }
 
 void SlimeMoldOpenCl::makeRenderImage() {

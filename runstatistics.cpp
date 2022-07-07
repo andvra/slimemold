@@ -28,6 +28,6 @@ int RunStatistics::getSteps() const {
 }
 
 std::string RunStatistics::getStatusString() const {
-    return std::to_string(numSteps);
-    //return "Steps: " + std::to_string(numSteps) + " FPS: " + std::to_string(fps);
+    //return std::to_string(numSteps);
+    return "Steps: " + std::to_string(numSteps) + " FPS: " + std::to_string(fps);
 }

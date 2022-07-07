@@ -2,14 +2,13 @@
 
 #include "utils.h"
 
-
 struct RunConfiguration {
     struct Hardware {
         static const bool onlyCpu = false;
     };
     struct Environment {
-        static const unsigned int width = 200;
-        static const unsigned int height = 200;
+        static const unsigned int width = 1000;
+        static const unsigned int height = 1000;
         static const unsigned int diffusionKernelSize = 3;
         static constexpr float diffusionDecay = 0.1f;
         static const unsigned int populationSize() { return static_cast<unsigned int>(width * height * populationSizeRatio); }

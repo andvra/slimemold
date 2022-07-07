@@ -148,6 +148,7 @@
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="kernels.cl" />
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@
 
 struct RunConfiguration {
     struct Hardware {
-        static const bool onlyCpu = true;
+        static const bool onlyCpu = false;
     };
     struct Environment {
         static const unsigned int width = 200;

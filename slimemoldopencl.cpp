@@ -8,31 +8,17 @@ SlimeMoldOpenCl::SlimeMoldOpenCl() : SlimeMold() {
     ctx = compute::context(gpu);
     queue = compute::command_queue(ctx, gpu);
 
-    const char source[] = BOOST_COMPUTE_STRINGIZE_SOURCE(
-        kernel void add(global float* values, global float* results)//, global float* constant)
-    {
-        size_t index = get_global_id(0);
-        results[index] = values[index] + values[index + 1] + values[index + 2];// +*constant;
-    }
-
-    kernel void diffuse(global float* values, global float* constantsff)
-    {
-        size_t index = get_global_id(0);
-        values[index] = values[index] + constantsff[0];
-        if (values[index] > 255.999) {
-            values[index] = values[index] - 255.999;
-        }
-    }
-
-    );
-
-    compute::program program = compute::program::build_with_source(source, ctx);
-    kernelDiffuse = compute::kernel(program, "diffuse");
-    auto kernelAdd = compute::kernel(program, "add");
+    loadKernels();
 
     int width = RunConfiguration::Environment::width;
     int height = RunConfiguration::Environment::height;
     dataTrailCurrent = compute::vector<float>(width * height, ctx);
+}
+
+void SlimeMoldOpenCl::loadKernels() {
+    auto kernelSource = Utils::Files::readAllFile("kernels.cl");
+    compute::program program = compute::program::build_with_source(kernelSource, ctx);
+    kernelDiffuse = compute::kernel(program, "diffuse");
 }
 
 void SlimeMoldOpenCl::diffusion() {

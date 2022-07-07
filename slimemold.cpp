@@ -39,7 +39,7 @@ void SlimeMold::run() {
 std::vector<unsigned int> SlimeMold::getAgentMoveOrder() {
     std::vector<unsigned int> agentMoveOrder(RunConfiguration::Environment::populationSize(), 0);
 
-    for (auto i = 0; i < RunConfiguration::Environment::populationSize(); i++) {
+    for (unsigned int i = 0; i < RunConfiguration::Environment::populationSize(); i++) {
         agentMoveOrder[i] = i;
     }
 

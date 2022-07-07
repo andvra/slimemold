@@ -1,5 +1,7 @@
 #pragma once
 
+#define CL_TARGET_OPENCL_VERSION 220
+
 #include <boost/compute.hpp>
 
 #include "slimemold.h"
@@ -19,6 +21,7 @@ public:
     void swapBuffers() {}
 
 private:
+    void loadKernels();
     compute::context ctx;
     compute::command_queue queue;
     compute::kernel kernelDiffuse;

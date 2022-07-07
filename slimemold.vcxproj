@@ -141,13 +141,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="runstatistics.cpp" />
     <ClCompile Include="slimemold.cpp" />
+    <ClCompile Include="slimemoldcpu.cpp" />
+    <ClCompile Include="slimemoldopencl.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="runstatistics.h" />
     <ClInclude Include="slimemold.h" />
+    <ClInclude Include="slimemoldcpu.h" />
+    <ClInclude Include="slimemoldopencl.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

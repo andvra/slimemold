@@ -63,11 +63,22 @@ private:
     void loadKernels();
     void loadAgents();
     void loadConfig();
+    void loadDeviceMemory();
+    void loadHostMemory();
+    void loadVariables();
     std::map<std::string, compute::kernel> kernels;
     compute::context ctx;
     compute::command_queue queue;
-    compute::vector<float> dataTrailCurrent;
-    compute::vector<Agent> agents;
+    compute::vector<float> dDataTrailCurrent;
+    compute::vector<Agent> dAgents;
+    // Desired position of agents
+    compute::vector<Agent> dAgentDesired;
+    compute::vector<int> dDesiredDestinationIndices;
+    compute::vector<float> dNewDirection;
     // TODO: Added as a vector here, since we know how to work with that. How do we create a custom type compute variable, not using a vector?
     compute::vector<RunConfigurationCl> config;
+    std::vector<unsigned char> hTakenMap;
+    std::vector<int> hDesiredDestinationIdx;
+    // New random directions, sent to device
+    std::vector<float> hNewDirection;
 };

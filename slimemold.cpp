@@ -36,16 +36,16 @@ void SlimeMold::run() {
     makeRenderImage();
 }
 
-std::vector<unsigned int> SlimeMold::getAgentMoveOrder() {
-    std::vector<unsigned int> agentMoveOrder(RunConfiguration::Environment::populationSize(), 0);
+std::vector<int> SlimeMold::getAgentMoveOrder() {
+    std::vector<int> agentMoveOrder(RunConfiguration::Environment::populationSize(), 0);
 
-    for (unsigned int i = 0; i < RunConfiguration::Environment::populationSize(); i++) {
+    for (int i = 0; i < RunConfiguration::Environment::populationSize(); i++) {
         agentMoveOrder[i] = i;
     }
 
     // The first agent that moves into a position is the only one that can stay there.
     //  To avoid bias, randomize move order at each step.
-    random->shuffleVector<unsigned int>(agentMoveOrder);
+    random->shuffleVector<int>(agentMoveOrder);
 
     return agentMoveOrder;
 }

@@ -3,16 +3,12 @@
 #include "slimemoldcpu.h"
 #include "utils.h"
 
-unsigned int xyToSlimeArrayIdx(float x, float y) {
-    return static_cast<unsigned int>(x) + static_cast<unsigned int>(y) * RunConfiguration::Environment::width;
+int xyToSlimeArrayIdx(float x, float y) {
+    return static_cast<int>(x) + static_cast<int>(y) * RunConfiguration::Environment::width;
 }
 
-unsigned int xyToSlimeArrayIdx(unsigned int x, unsigned int y) {
-    return static_cast<unsigned int>(x + y * RunConfiguration::Environment::width);
-}
-
-unsigned int xyToSlimeArrayIdx(int x, int y) {
-    return static_cast<unsigned int>(x + y * static_cast<int>(RunConfiguration::Environment::width));
+int xyToSlimeArrayIdx(int x, int y) {
+    return static_cast<int>(x + y * RunConfiguration::Environment::width);
 }
 
 bool coordValid(int x, int y) {
@@ -83,7 +79,7 @@ void SlimeMoldCpu::decay() {
 
 void SlimeMoldCpu::move() {
     auto moveOrder = getAgentMoveOrder();
-
+    
     for (int i = 0; i < RunConfiguration::Environment::width * RunConfiguration::Environment::height; i++) {
         squareTaken[i] = false;
     }
@@ -92,8 +88,8 @@ void SlimeMoldCpu::move() {
         auto& agent = agents[moveOrder[i]];
         auto newX = agent.x + std::cos(agent.direction) * RunConfiguration::Agent::stepSize;
         auto newY = agent.y + std::sin(agent.direction) * RunConfiguration::Agent::stepSize;
-        auto newXSquare = static_cast<unsigned int>(newX);
-        auto newYSquare = static_cast<unsigned int>(newY);
+        auto newXSquare = static_cast<int>(newX);
+        auto newYSquare = static_cast<int>(newY);
         if (newX >= 0
             && newX < RunConfiguration::Environment::width
             && newY >= 0

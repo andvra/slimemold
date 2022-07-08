@@ -22,5 +22,5 @@ float Random::randFloat() {
 }
 
 float Random::randomDirection() {
-    return 2.0f * PI * randFloat();
+    return 2.0f * static_cast<float>(PI) * randFloat();
 }

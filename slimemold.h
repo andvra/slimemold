@@ -7,21 +7,22 @@ struct RunConfiguration {
         static const bool onlyCpu = false;
     };
     struct Environment {
-        static const unsigned int width = 1000;
-        static const unsigned int height = 1000;
-        static const unsigned int diffusionKernelSize = 3;
+        static const int width = 1000;
+        static const int height = 1000;
+        static const int diffusionKernelSize = 3;
         static constexpr float diffusionDecay = 0.1f;
-        static const unsigned int populationSize() { return static_cast<unsigned int>(width * height * populationSizeRatio); }
+        static const int populationSize() { return static_cast<unsigned int>(width * height * populationSizeRatio); }
+        static const int numPixels() { return width * height; }
     private:
         static constexpr float populationSizeRatio = 0.15f;
     };
     struct Agent {
         static constexpr float sensorAngle = Utils::Math::deg2rad(22.5f);
         static constexpr float rotationAngle = Utils::Math::deg2rad(45.0f);
-        static const unsigned int sensorOffset = 9;
-        static const unsigned int sensorWidth = 1;
-        static const unsigned int stepSize = 1;
-        static const unsigned int chemoDeposition = 5;
+        static const int sensorOffset = 9;
+        static const int sensorWidth = 1;
+        static const int stepSize = 1;
+        static const int chemoDeposition = 5;
         static constexpr float pRandomChangeDirection = 0.0f;
     };
 };
@@ -49,6 +50,8 @@ public:
     unsigned char* getDataTrailRender();
 protected:
     unsigned char* dataTrailRender;
-    std::vector<unsigned int> getAgentMoveOrder();
+    // Agent move will be blocked if there's another agent at the desired position. To Avoid bias, we'll
+    //  randomize the order of which the agents move every step
+    std::vector<int> getAgentMoveOrder();
     Utils::Random* random;
 };

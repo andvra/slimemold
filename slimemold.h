@@ -41,9 +41,7 @@ public:
     virtual void decay() = 0;
     virtual void move() = 0;
     virtual void sense() = 0;
-    virtual float senseAtRotation(Agent& agent, float rotationOffset) = 0;
     virtual void makeRenderImage() = 0;
-    virtual void deposit(int x, int y) = 0;
     virtual void swapBuffers() = 0;
     std::vector<Agent> initAgents();
     void run();

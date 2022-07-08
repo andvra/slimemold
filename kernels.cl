@@ -57,3 +57,48 @@ kernel void move(global RunConfigurationCl* config, global float* trailMap, glob
         trailMap[desiredDestinationIdx] = clamp(desiredChemo, 0.0f, 255.0f);
     }
 }
+
+kernel void senseAtRotation(global RunConfigurationCl* config, global float* trailMap, global Agent* agents, int agentIdx, float rotationOffset, float* res)
+{
+    int sensorOffset = config[0].agentSensorOffset;
+    int width = config[0].envWidth;
+    int height = config[0].envHeight;
+
+    int x = agents[agentIdx].x + sensorOffset * cos(agents[agentIdx].direction + rotationOffset);
+    int y = agents[agentIdx].y + sensorOffset * sin(agents[agentIdx].direction + rotationOffset);
+
+    // Check if position is valid
+    if(x>= 0 && x<width && y>=0 && y<height) {
+        int idx = x + y * width;
+        *res = trailMap[idx];
+    }
+    else {
+        *res = 0.0f;
+    }
+}
+
+kernel void sense(global RunConfigurationCl* config, global float* trailMap, global Agent* agents, global float* randomValues)
+{
+    size_t idx = get_global_id(0);
+    float sensorAngle = config[0].agentSensorAngle;
+    float senseLeft, senseRight, senseForward;
+    float rotationAngle = config[0].agentRotationAngle;
+    
+    senseAtRotation(config, trailMap, agents, idx, -sensorAngle, &senseLeft);
+    senseAtRotation(config, trailMap, agents, idx, sensorAngle, &senseRight);
+    senseAtRotation(config, trailMap, agents, idx, 0, &senseForward);
+
+    if (senseForward > senseLeft && senseForward > senseRight) {
+        // Do nothing
+    }
+    else if (senseForward < senseLeft && senseForward < senseRight) {
+        // Rotate in random direction
+        agents[idx].direction += (randomValues[idx] > 0.5) ? -rotationAngle : rotationAngle;
+    }
+    else if (senseLeft < senseRight) {
+        agents[idx].direction += rotationAngle;
+    }
+    else {
+        agents[idx].direction -= rotationAngle;
+    }
+}

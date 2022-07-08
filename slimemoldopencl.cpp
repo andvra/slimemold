@@ -40,6 +40,7 @@ void SlimeMoldOpenCl::loadDeviceMemory() {
     dDesiredDestinationIndices = compute::vector<int>(numAgents, ctx);
     dNewDirection = compute::vector<float>(numAgents, ctx);
     dAgentDesired = compute::vector<Agent>(numAgents, ctx);
+    dRandomValues = compute::vector<float>(numAgents, ctx);
     loadAgents();
 }
 void SlimeMoldOpenCl::loadConfig() {
@@ -48,9 +49,9 @@ void SlimeMoldOpenCl::loadConfig() {
 
     hostConfigs[0] = hostConfig;
 
-    config = compute::vector<RunConfigurationCl>(1, ctx);
+    dConfig = compute::vector<RunConfigurationCl>(1, ctx);
 
-    compute::copy(hostConfigs.begin(), hostConfigs.end(), config.begin(), queue);
+    compute::copy(hostConfigs.begin(), hostConfigs.end(), dConfig.begin(), queue);
 }
 
 void SlimeMoldOpenCl::loadAgents() {
@@ -71,7 +72,8 @@ void SlimeMoldOpenCl::loadKernels() {
     std::vector<std::string> kernelNames = {
         "diffuse",
         "move",
-        "desiredMoves"
+        "desiredMoves",
+        "sense"
     };
 
     for (auto& kernelName : kernelNames) {
@@ -99,7 +101,7 @@ void SlimeMoldOpenCl::diffusion() {
     //queue.enqueue_1d_range_kernel(kernelDiffuse, 0, 200 * 200, 0);
 
     compute::kernel& kernelDiffuse = kernels["diffuse"];
-    kernelDiffuse.set_arg(0, config.get_buffer());
+    kernelDiffuse.set_arg(0, dConfig.get_buffer());
     kernelDiffuse.set_arg(1, dDataTrailCurrent.get_buffer());
     queue.enqueue_1d_range_kernel(kernelDiffuse, 0, numPixels, 0);
 }
@@ -119,7 +121,7 @@ void SlimeMoldOpenCl::move() {
 
     // Calculate desired next position of all agents
 
-    kernelDesiredMove.set_arg(0, config.get_buffer());
+    kernelDesiredMove.set_arg(0, dConfig.get_buffer());
     kernelDesiredMove.set_arg(1, dAgents.get_buffer());
     kernelDesiredMove.set_arg(2, dAgentDesired.get_buffer());
     kernelDesiredMove.set_arg(3, dDesiredDestinationIndices.get_buffer());
@@ -151,7 +153,7 @@ void SlimeMoldOpenCl::move() {
     compute::copy(hNewDirection.begin(), hNewDirection.end(), dNewDirection.begin(), queue);
     compute::copy(hDesiredDestinationIndices.begin(), hDesiredDestinationIndices.end(), dDesiredDestinationIndices.begin(), queue);
 
-    kernelMove.set_arg(0, config.get_buffer());
+    kernelMove.set_arg(0, dConfig.get_buffer());
     kernelMove.set_arg(1, dDataTrailCurrent.get_buffer());
     kernelMove.set_arg(2, dAgents.get_buffer());
     kernelMove.set_arg(3, dAgentDesired.get_buffer());
@@ -170,4 +172,23 @@ void SlimeMoldOpenCl::makeRenderImage() {
     for (int i = 0; i < dataTrailCurrentHost.size(); i++) {
         dataTrailRender[i] = static_cast<unsigned char>(dataTrailCurrentHost[i]);
     }
+}
+
+void SlimeMoldOpenCl::sense() {
+    int numAgents = RunConfiguration::Environment::populationSize();
+    compute::kernel& kernelSense = kernels["sense"];
+    std::vector<float> hRandomValues(numAgents);
+
+    for (auto& f : hRandomValues) {
+        f = random->randFloat();
+    }
+
+    compute::copy(hRandomValues.begin(), hRandomValues.end(), dRandomValues.begin(), queue);
+
+    kernelSense.set_arg(0, dConfig.get_buffer());
+    kernelSense.set_arg(1, dDataTrailCurrent.get_buffer());
+    kernelSense.set_arg(2, dAgents.get_buffer());
+    kernelSense.set_arg(3, dRandomValues.get_buffer());
+
+    queue.enqueue_1d_range_kernel(kernelSense, 0, numAgents, 0);
 }

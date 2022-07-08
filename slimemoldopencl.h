@@ -53,10 +53,8 @@ public:
     void diffusion();
     void decay() {}
     void move();
-    void sense() {}
-    float senseAtRotation(Agent& agent, float rotationOffset) { return 0.0f; }
+    void sense();
     void makeRenderImage();
-    void deposit(int x, int y) {}
     void swapBuffers() {}
 
 private:
@@ -75,8 +73,10 @@ private:
     compute::vector<Agent> dAgentDesired;
     compute::vector<int> dDesiredDestinationIndices;
     compute::vector<float> dNewDirection;
+    // User to make random rotation when sensing
+    compute::vector<float> dRandomValues;
     // TODO: Added as a vector here, since we know how to work with that. How do we create a custom type compute variable, not using a vector?
-    compute::vector<RunConfigurationCl> config;
+    compute::vector<RunConfigurationCl> dConfig;
     std::vector<unsigned char> hTakenMap;
     std::vector<int> hDesiredDestinationIdx;
     // New random directions, sent to device

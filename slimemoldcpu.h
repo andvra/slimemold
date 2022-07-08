@@ -11,15 +11,15 @@ public:
     void diffusion();
     void decay();
     void move();
-    void deposit(int x, int y);
     void swapBuffers();
     void sense();
-    float senseAtRotation(Agent& agent, float rotationOffset);
     void makeRenderImage();
 private:
     float* dataTrailCurrent;
     float* dataTrailNext;
     bool* squareTaken;
     std::vector<Agent> agents;
+    float senseAtRotation(Agent& agent, float rotationOffset);
+    void deposit(int x, int y);
 };
 

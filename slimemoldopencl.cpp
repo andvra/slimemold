@@ -21,6 +21,9 @@ void addCustomTypes(std::string& source) {
 void SlimeMoldOpenCl::loadVariables() {
     loadDeviceMemory();
     loadHostMemory();
+
+    idxDataTrailInUse = 0;
+    idxDataTrailBuffer = 1;
 }
 
 void SlimeMoldOpenCl::loadHostMemory() {
@@ -36,7 +39,8 @@ void SlimeMoldOpenCl::loadDeviceMemory() {
     int numPixels = RunConfiguration::Environment::numPixels();
     int numAgents = RunConfiguration::Environment::populationSize();
 
-    dDataTrailCurrent = compute::vector<float>(numPixels, ctx);
+    dDataTrails.push_back(compute::vector<float>(numPixels, ctx));
+    dDataTrails.push_back(compute::vector<float>(numPixels, ctx));
     dDesiredDestinationIndices = compute::vector<int>(numAgents, ctx);
     dNewDirection = compute::vector<float>(numAgents, ctx);
     dAgentDesired = compute::vector<Agent>(numAgents, ctx);
@@ -84,25 +88,11 @@ void SlimeMoldOpenCl::loadKernels() {
 void SlimeMoldOpenCl::diffusion() {
 
     int numPixels = RunConfiguration::Environment::numPixels();
-    // TODO: Continue work here.
-    //  1. Write a proper diffuse kernel
-    //  2. Write kernels for the other steps as well
-    //
-    //  Keep current/next data trails as variables. Call the diffuse function with these in the proper order,
-    //   based on a variable set in the swap() function. See if it's simple to switch to pointers on device?
-    //  Otherwise, just keep a bool to say which is current and which is next.
-
-    //compute::kernel& kernelDiffuse = kernels["diffuse"];
-
-    //compute::vector<float> constants(1, ctx);
-    //constants[0] = rand() % 10;
-    //kernelDiffuse.set_arg(0, dataTrailCurrent.get_buffer());
-    //kernelDiffuse.set_arg(1, constants.get_buffer());
-    //queue.enqueue_1d_range_kernel(kernelDiffuse, 0, 200 * 200, 0);
-
     compute::kernel& kernelDiffuse = kernels["diffuse"];
+
     kernelDiffuse.set_arg(0, dConfig.get_buffer());
-    kernelDiffuse.set_arg(1, dDataTrailCurrent.get_buffer());
+    kernelDiffuse.set_arg(1, dDataTrails[idxDataTrailInUse].get_buffer());
+    kernelDiffuse.set_arg(2, dDataTrails[idxDataTrailBuffer].get_buffer());
     queue.enqueue_1d_range_kernel(kernelDiffuse, 0, numPixels, 0);
 }
 
@@ -154,7 +144,7 @@ void SlimeMoldOpenCl::move() {
     compute::copy(hDesiredDestinationIndices.begin(), hDesiredDestinationIndices.end(), dDesiredDestinationIndices.begin(), queue);
 
     kernelMove.set_arg(0, dConfig.get_buffer());
-    kernelMove.set_arg(1, dDataTrailCurrent.get_buffer());
+    kernelMove.set_arg(1, dDataTrails[idxDataTrailInUse].get_buffer());
     kernelMove.set_arg(2, dAgents.get_buffer());
     kernelMove.set_arg(3, dAgentDesired.get_buffer());
     kernelMove.set_arg(4, dDesiredDestinationIndices.get_buffer());
@@ -167,7 +157,7 @@ void SlimeMoldOpenCl::makeRenderImage() {
     int numPixels = RunConfiguration::Environment::numPixels();
     std::vector<float> dataTrailCurrentHost(numPixels);
 
-    compute::copy(dDataTrailCurrent.begin(), dDataTrailCurrent.end(), dataTrailCurrentHost.begin(), queue);
+    compute::copy(dDataTrails[idxDataTrailInUse].begin(), dDataTrails[idxDataTrailInUse].end(), dataTrailCurrentHost.begin(), queue);
 
     for (int i = 0; i < dataTrailCurrentHost.size(); i++) {
         dataTrailRender[i] = static_cast<unsigned char>(dataTrailCurrentHost[i]);
@@ -186,9 +176,13 @@ void SlimeMoldOpenCl::sense() {
     compute::copy(hRandomValues.begin(), hRandomValues.end(), dRandomValues.begin(), queue);
 
     kernelSense.set_arg(0, dConfig.get_buffer());
-    kernelSense.set_arg(1, dDataTrailCurrent.get_buffer());
+    kernelSense.set_arg(1, dDataTrails[idxDataTrailInUse].get_buffer());
     kernelSense.set_arg(2, dAgents.get_buffer());
     kernelSense.set_arg(3, dRandomValues.get_buffer());
 
     queue.enqueue_1d_range_kernel(kernelSense, 0, numAgents, 0);
+}
+
+void SlimeMoldOpenCl::swapBuffers() {
+    std::swap(idxDataTrailBuffer, idxDataTrailInUse);
 }

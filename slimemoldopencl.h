@@ -55,7 +55,7 @@ public:
     void move();
     void sense();
     void makeRenderImage();
-    void swapBuffers() {}
+    void swapBuffers();
 
 private:
     void loadKernels();
@@ -67,7 +67,7 @@ private:
     std::map<std::string, compute::kernel> kernels;
     compute::context ctx;
     compute::command_queue queue;
-    compute::vector<float> dDataTrailCurrent;
+    std::vector<compute::vector<float>> dDataTrails;
     compute::vector<Agent> dAgents;
     // Desired position of agents
     compute::vector<Agent> dAgentDesired;
@@ -81,4 +81,5 @@ private:
     std::vector<int> hDesiredDestinationIdx;
     // New random directions, sent to device
     std::vector<float> hNewDirection;
+    int idxDataTrailInUse, idxDataTrailBuffer;
 };

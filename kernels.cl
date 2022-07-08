@@ -1,9 +1,10 @@
-kernel void diffuse(global RunConfigurationCl* config, global float* trailMap)
+kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSource, global float* trailMapDestination)
 {
     // TODO: Only used for clearing the image right now
+    // Continue working here!
     size_t idx = get_global_id(0);
 
-    trailMap[idx] = clamp(trailMap[idx] - 1.0f, 0.0f, 255.0f);
+    trailMapSource[idx] = clamp(trailMapSource[idx] - 1.0f, 0.0f, 255.0f);
 
 }
 

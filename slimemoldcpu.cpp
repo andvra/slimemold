@@ -35,7 +35,7 @@ void SlimeMoldCpu::diffusion() {
     const auto cols = RunConfiguration::Environment::width;
     const auto rows = RunConfiguration::Environment::height;
     const int kernelSize = RunConfiguration::Environment::diffusionKernelSize;
-    const float diffuseRate = 0.2f;
+    const float diffuseRate = RunConfiguration::Environment::diffusionRatio;
     const int numThreads = std::thread::hardware_concurrency();
     int numCols = cols / numThreads;
     std::vector<std::thread> threads;

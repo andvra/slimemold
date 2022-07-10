@@ -33,7 +33,7 @@ kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSou
     int windowHeight = config[0].envHeight;
     int kernelSize = config[0].envDiffusionKernelSize;
     size_t idxDest = col + row * windowWidth;
-    float diffuseRate = 0.2f;
+    float diffuseRate = config[0].envDiffusionRatio;
 
     float chemo = 0.0f;
     int numSquares = 0;

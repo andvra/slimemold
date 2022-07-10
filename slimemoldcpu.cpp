@@ -73,15 +73,17 @@ void SlimeMoldCpu::move() {
         auto newY = agent.y + std::sin(agent.direction) * RunConfiguration::Agent::stepSize;
         auto newXSquare = static_cast<int>(newX);
         auto newYSquare = static_cast<int>(newY);
+        auto trailIdx = newXSquare + newYSquare * RunConfiguration::Environment::width;
         if (newX >= 0
             && newX < RunConfiguration::Environment::width
             && newY >= 0
             && newY < RunConfiguration::Environment::height
-            && !squareTaken[newXSquare + newYSquare * RunConfiguration::Environment::width]
+            && !squareTaken[trailIdx]
             ) {
             agent.x = newX;
             agent.y = newY;
             deposit(newXSquare, newYSquare);
+            squareTaken[trailIdx] = true;
         }
         else {
             agent.direction = random->randomDirection();

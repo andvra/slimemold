@@ -30,7 +30,7 @@ int main()
 
         cv::imshow(windowId, imgTrail);
 
-        auto kc = cv::waitKey(10);
+        auto kc = cv::waitKey(1);
 
         if (kc == 27) {
             done = true;

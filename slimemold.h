@@ -2,6 +2,11 @@
 
 #include "utils.h"
 
+enum class AgentInitPattern {
+    Random,
+    Circle
+
+};
 struct RunConfiguration {
     struct Hardware {
         static const bool onlyCpu = false;
@@ -13,6 +18,7 @@ struct RunConfiguration {
         static constexpr float diffusionDecay = 0.1f;
         static const int populationSize() { return static_cast<unsigned int>(width * height * populationSizeRatio); }
         static const int numPixels() { return width * height; }
+        static const AgentInitPattern initPattern = AgentInitPattern::Random;
     private:
         static constexpr float populationSizeRatio = 0.15f;
     };

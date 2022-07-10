@@ -65,6 +65,9 @@ private:
     void loadHostMemory();
     void loadVariables();
     void loadDeviceMemoryTrailMaps();
+    void moveCoordinate();
+    void moveDesiredMoves();
+    void moveActualMove();
     std::map<std::string, compute::kernel> kernels;
     compute::context ctx;
     compute::command_queue queue;

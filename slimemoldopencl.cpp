@@ -122,26 +122,9 @@ void SlimeMoldOpenCl::decay() {
     queue.enqueue_1d_range_kernel(kernelDecay, 0, numPixels, 0);
 }
 
-void SlimeMoldOpenCl::move() {
-
-    int numPixels = RunConfiguration::Environment::numPixels();
+void SlimeMoldOpenCl::moveCoordinate() {
     int numAgents = RunConfiguration::Environment::populationSize();
     auto agentMoveOrder = getAgentMoveOrder();
-    compute::kernel& kernelDesiredMove = kernels["desiredMoves"];
-    compute::kernel& kernelMove = kernels["move"];
-    compute::kernel& kernelTempRender = kernels["temprender"];
-    //  1. (GPU) Calculate desired indices. This functions takes a result vector if size numAgents, where the value is set to its desired move idx.
-    //      Keep a buffer on the gpu with desired newx/newy as float values. This will make it more efficient, not rounding all values on CPU
-    //  2. (CPU) Create two lists of size numAgents: canMove and newAngle. Copy to GPU
-    //  3. (GPU) If canMove = false for agentIdx, update angle to value in newAngle
-
-    // Calculate desired next position of all agents
-
-    kernelDesiredMove.set_arg(0, dConfig.get_buffer());
-    kernelDesiredMove.set_arg(1, dAgents.get_buffer());
-    kernelDesiredMove.set_arg(2, dAgentDesired.get_buffer());
-    kernelDesiredMove.set_arg(3, dDesiredDestinationIndices.get_buffer());
-    queue.enqueue_1d_range_kernel(kernelDesiredMove, 0, numAgents, 0);
 
     // Read desired position of all agents
     std::vector<int> hDesiredDestinationIndices(numAgents);
@@ -149,7 +132,10 @@ void SlimeMoldOpenCl::move() {
 
     std::fill(hTakenMap.begin(), hTakenMap.end(), 0);
 
-    for (int idx = 0; idx < numAgents; idx++) {
+    for (int agentIdx = 0; agentIdx < numAgents; agentIdx++) {
+        // We want to randomize the order in which we move agents. An agent will be blocked from moving to a square 
+        //  if another agent is there already, so randomizing the order is used to avoid bias.
+        auto idx = agentMoveOrder[agentIdx];
         int desiredPos = hDesiredDestinationIndices[idx];
         bool isOutOfBounds = (desiredPos == -1);
         if (isOutOfBounds) {
@@ -168,7 +154,25 @@ void SlimeMoldOpenCl::move() {
 
     compute::copy(hNewDirection.begin(), hNewDirection.end(), dNewDirection.begin(), queue);
     compute::copy(hDesiredDestinationIndices.begin(), hDesiredDestinationIndices.end(), dDesiredDestinationIndices.begin(), queue);
+}
 
+void SlimeMoldOpenCl::moveDesiredMoves() {
+    int numAgents = RunConfiguration::Environment::populationSize();
+    compute::kernel& kernelDesiredMove = kernels["desiredMoves"];
+
+    // Calculate desired next position of all agents
+
+    kernelDesiredMove.set_arg(0, dConfig.get_buffer());
+    kernelDesiredMove.set_arg(1, dAgents.get_buffer());
+    kernelDesiredMove.set_arg(2, dAgentDesired.get_buffer());
+    kernelDesiredMove.set_arg(3, dDesiredDestinationIndices.get_buffer());
+    queue.enqueue_1d_range_kernel(kernelDesiredMove, 0, numAgents, 0);
+}
+
+void SlimeMoldOpenCl::moveActualMove() {
+    int numAgents = RunConfiguration::Environment::populationSize();
+    compute::kernel& kernelMove = kernels["move"];
+    
     kernelMove.set_arg(0, dConfig.get_buffer());
     kernelMove.set_arg(1, dDataTrails[idxDataTrailInUse].get_buffer());
     kernelMove.set_arg(2, dAgents.get_buffer());
@@ -177,6 +181,17 @@ void SlimeMoldOpenCl::move() {
     kernelMove.set_arg(5, dNewDirection.get_buffer());
 
     queue.enqueue_1d_range_kernel(kernelMove, 0, numAgents, 0);
+}
+
+void SlimeMoldOpenCl::move() {
+    //  1. (GPU) Calculate desired indices. This functions takes a result vector of size numAgents, where the value is set to its desired move idx.
+    //      Keep a buffer on the gpu with desired newx/newy as float values. This will make it more efficient, not rounding all values on CPU
+    //  2. (CPU) Coordinate movements on CPU: it's made on CPU so we can get good random numbers
+    //  3. (GPU) Make actual movement, based on coordination made on CPU
+
+    moveDesiredMoves();
+    moveCoordinate();
+    moveActualMove();
 }
 
 void SlimeMoldOpenCl::makeRenderImage() {

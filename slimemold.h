@@ -2,6 +2,14 @@
 
 #include "utils.h"
 
+/*
+To add a custom type :
+
+1. Add BOOST_COMPUTE_ADAPT_STRUCT in the header.This makes sure to pad the structure so it can be used with OpenCL
+2. Add the type definition to the top of the kernel source code : compute::type_definition<NameOfCustomType>() + "\n" + <READ_CODE>;
+3. Build the kernels as normal
+*/
+
 enum class AgentInitPattern {
     Random,
     Circle

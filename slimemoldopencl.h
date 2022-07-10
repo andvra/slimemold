@@ -24,7 +24,8 @@ struct RunConfigurationCl {
         agentSensorWidth(RunConfiguration::Agent::sensorWidth),
         agentStepSize(RunConfiguration::Agent::stepSize),
         agentChemoDeposition(RunConfiguration::Agent::chemoDeposition),
-        agentpRandomChangeDirection(RunConfiguration::Agent::pRandomChangeDirection) {}
+        agentpRandomChangeDirection(RunConfiguration::Agent::pRandomChangeDirection),
+        agentMaxTotalChemo(RunConfiguration::Agent::maxTotalChemo) {}
     // Hardware
     int hwOnlyCpu;
     // Environment
@@ -41,11 +42,13 @@ struct RunConfigurationCl {
     unsigned int agentStepSize;
     unsigned int agentChemoDeposition;
     float agentpRandomChangeDirection;
+    float agentMaxTotalChemo;
 };
 
 // Make the Agent struct usable in OpenCL. Rename it to AgentCL so we can easily identify it
 BOOST_COMPUTE_ADAPT_STRUCT(Agent, Agent, (x, y, direction))
-BOOST_COMPUTE_ADAPT_STRUCT(RunConfigurationCl, RunConfigurationCl, (hwOnlyCpu, envWidth, envHeight, envDiffusionKernelSize, envDiffusionDecay, envPopulationSize, agentSensorAngle, agentRotationAngle, agentSensorOffset, agentSensorWidth, agentStepSize, agentChemoDeposition, agentpRandomChangeDirection))
+// NB Make sure to list all the members! Otherwise there will be a compile-time error C2338
+BOOST_COMPUTE_ADAPT_STRUCT(RunConfigurationCl, RunConfigurationCl, (hwOnlyCpu, envWidth, envHeight, envDiffusionKernelSize, envDiffusionDecay, envPopulationSize, agentSensorAngle, agentRotationAngle, agentSensorOffset, agentSensorWidth, agentStepSize, agentChemoDeposition, agentpRandomChangeDirection, agentMaxTotalChemo))
 
 class SlimeMoldOpenCl : public SlimeMold {
 public:

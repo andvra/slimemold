@@ -1,3 +1,9 @@
+kernel void validChemo(global RunConfigurationCl* config, float* chemo)
+{
+    //float maxTotalChemo = config[0].agentMaxTotalChemo;
+    //clamp(*chemo, 0.0f, maxTotalChemo);
+}
+
 kernel void measureChemoAroundPosition(global RunConfigurationCl* config, float* trailMap, int x, int y, int kernelSize, float* totalChemo, int* numMeasuredSquares) 
 {
     int windowWidth = config[0].envWidth;
@@ -34,7 +40,7 @@ kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSou
     measureChemoAroundPosition(config, trailMapSource, col, row, kernelSize, &chemo, &numSquares);
 
     //  Why does this look "better" if we use numSquares+1 instead of numSquares?
-    trailMapDestination[idxDest] = chemo / (numSquares+1);
+    trailMapDestination[idxDest] = chemo / (numSquares + 1);
 
 }
 
@@ -43,7 +49,9 @@ kernel void decay(global RunConfigurationCl* config, global float* trailMap)
     size_t idx = get_global_id(0);
     float decay = config[0].envDiffusionDecay;
 
-    trailMap[idx] = clamp(trailMap[idx] - decay, 0.0f, 255.999f);
+    float chemo = trailMap[idx] - decay;
+    validChemo(config, &chemo);
+    trailMap[idx] = chemo;
 }
 
 kernel void desiredMoves(global RunConfigurationCl* config, global Agent* agents, global Agent* agentsNewPos, global int* desiredDestinationIndices)
@@ -93,8 +101,9 @@ kernel void move(global RunConfigurationCl* config, global float* trailMap, glob
         int y = agents[idx].y;
         int width = config[0].envWidth;
         int trailIdx = x + width * y;
-        float desiredChemo = trailMap[desiredDestinationIdx] + (float)chemoDeposition;
-        trailMap[desiredDestinationIdx] = clamp(desiredChemo, 0.0f, 255.999f);
+        float chemo = trailMap[desiredDestinationIdx] + (float)chemoDeposition;
+        validChemo(config, &chemo);
+        trailMap[desiredDestinationIdx] = chemo;
     }
 }
 

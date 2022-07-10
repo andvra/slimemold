@@ -31,6 +31,7 @@ struct RunConfiguration {
         static const int stepSize = 1;
         static const int chemoDeposition = 5;
         static constexpr float pRandomChangeDirection = 0.0f;
+        static constexpr float maxTotalChemo = 255.999f;
     };
 };
 

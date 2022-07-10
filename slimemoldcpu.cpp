@@ -41,9 +41,14 @@ void SlimeMoldCpu::diffusion() {
             float totalChemo;
             int numMeasuredSquares;
             measureChemoAroundPosition(col, row, kernelSize, totalChemo, numMeasuredSquares);
-            dataTrailNext[idxDest] = totalChemo / (numMeasuredSquares+1);
+            auto val = totalChemo / numMeasuredSquares;
+            dataTrailNext[idxDest] = totalChemo / (numMeasuredSquares + 1);
         }
     }
+}
+
+float SlimeMoldCpu::validChemo(float v) {
+    return Utils::Math::clamp<float>(0.0f, RunConfiguration::Agent::maxTotalChemo, v);
 }
 
 void SlimeMoldCpu::decay() {
@@ -51,7 +56,7 @@ void SlimeMoldCpu::decay() {
     const auto decay = RunConfiguration::Environment::diffusionDecay;
 
     for (int i = 0; i < numIndices; i++) {
-        dataTrailCurrent[i] = Utils::Math::clamp<float>(0.0f, 255.999f, dataTrailCurrent[i] - decay);
+        dataTrailCurrent[i] = validChemo(dataTrailCurrent[i] - decay);
     }
 }
 
@@ -86,7 +91,7 @@ void SlimeMoldCpu::move() {
 
 void SlimeMoldCpu::deposit(int x, int y) {
     auto idx = xyToSlimeArrayIdx(x, y);
-    dataTrailCurrent[idx] = Utils::Math::clamp<float>(0.0f, 255.999f, dataTrailCurrent[idx] + RunConfiguration::Agent::chemoDeposition);
+    dataTrailCurrent[idx] = validChemo(dataTrailCurrent[idx] + RunConfiguration::Agent::chemoDeposition);
 }
 
 void SlimeMoldCpu::swapBuffers() {

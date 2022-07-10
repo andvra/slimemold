@@ -1,7 +1,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-This project is an implementation of [this](https://uwe-repository.worktribe.com/output/980579) paper. The idea is to simulate slime mold based on a number of agents.
+This project is based on [this](https://uwe-repository.worktribe.com/output/980579) paper. The idea is to simulate slime mold based on a number of agents.
 
 ![img](./github/running.png)
 

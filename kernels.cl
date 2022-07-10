@@ -33,6 +33,7 @@ kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSou
     int windowHeight = config[0].envHeight;
     int kernelSize = config[0].envDiffusionKernelSize;
     size_t idxDest = col + row * windowWidth;
+    float diffuseRate = 0.2f;
 
     float chemo = 0.0f;
     int numSquares = 0;
@@ -40,7 +41,13 @@ kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSou
     measureChemoAroundPosition(config, trailMapSource, col, row, kernelSize, &chemo, &numSquares);
 
     //  Why does this look "better" if we use numSquares+1 instead of numSquares?
-    trailMapDestination[idxDest] = chemo / (numSquares + 1);
+
+    // TODO: Check with the paper. Is there diffuseRate vs decayRate, are they both there?
+
+    float blurredVal =  chemo / (kernelSize * kernelSize+ 1);
+    float newVal = diffuseRate * blurredVal + (1 - diffuseRate) * trailMapSource[idxDest];
+
+    trailMapDestination[idxDest] = newVal;
 
 }
 

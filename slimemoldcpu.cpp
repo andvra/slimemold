@@ -35,23 +35,21 @@ void SlimeMoldCpu::diffusion() {
     const auto cols = RunConfiguration::Environment::width;
     const auto rows = RunConfiguration::Environment::height;
     const int kernelSize = RunConfiguration::Environment::diffusionKernelSize;
-
+    const float diffuseRate = 0.2f;
     const int numThreads = std::thread::hardware_concurrency();
     int numCols = cols / numThreads;
     std::vector<std::thread> threads;
 
-    auto calc = [this, kernelSize, rows](int colStart, int colEndExclusive) {
+    auto calc = [this, kernelSize, rows, diffuseRate](int colStart, int colEndExclusive) {
         for (int col = colStart; col < colEndExclusive; col++) {
             for (int row = 0; row < rows; row++) {
                 auto idxDest = xyToSlimeArrayIdx(col, row);
                 float totalChemo;
                 int numMeasuredSquares;
                 measureChemoAroundPosition(col, row, kernelSize, totalChemo, numMeasuredSquares);
-                auto val = totalChemo / numMeasuredSquares;
-                if (val > 0) {
-                    int a = 3;
-                }
-                dataTrailNext[idxDest] = totalChemo / (numMeasuredSquares + 1);
+                float blurredVal = totalChemo / (kernelSize * kernelSize + 1);
+                float newVal = diffuseRate * blurredVal + (1 - diffuseRate) * dataTrailCurrent[idxDest];
+                dataTrailNext[idxDest] = newVal;
             }
         }
     };

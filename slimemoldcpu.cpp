@@ -1,4 +1,5 @@
 #include <cmath>
+#include <thread>
 
 #include "slimemoldcpu.h"
 #include "utils.h"
@@ -35,16 +36,36 @@ void SlimeMoldCpu::diffusion() {
     const auto rows = RunConfiguration::Environment::height;
     const int kernelSize = RunConfiguration::Environment::diffusionKernelSize;
 
-    for (int col = 0; col < cols; col++) {
-        for (int row = 0; row < rows; row++) {
-            auto idxDest = xyToSlimeArrayIdx(col, row);
-            float totalChemo;
-            int numMeasuredSquares;
-            measureChemoAroundPosition(col, row, kernelSize, totalChemo, numMeasuredSquares);
-            auto val = totalChemo / numMeasuredSquares;
-            dataTrailNext[idxDest] = totalChemo / (numMeasuredSquares + 1);
+    const int numThreads = std::thread::hardware_concurrency();
+    int numCols = cols / numThreads;
+    std::vector<std::thread> threads;
+
+    auto calc = [this, kernelSize, rows](int colStart, int colEndExclusive) {
+        for (int col = colStart; col < colEndExclusive; col++) {
+            for (int row = 0; row < rows; row++) {
+                auto idxDest = xyToSlimeArrayIdx(col, row);
+                float totalChemo;
+                int numMeasuredSquares;
+                measureChemoAroundPosition(col, row, kernelSize, totalChemo, numMeasuredSquares);
+                auto val = totalChemo / numMeasuredSquares;
+                if (val > 0) {
+                    int a = 3;
+                }
+                dataTrailNext[idxDest] = totalChemo / (numMeasuredSquares + 1);
+            }
         }
+    };
+
+    for (int idxThread = 0; idxThread < numThreads; idxThread++) {
+        auto colStart = idxThread * numCols;
+        auto colEndExclusive = std::min(cols, (idxThread + 1) * numCols);
+        threads.push_back(std::thread(calc, colStart, colEndExclusive));
     }
+
+    std::for_each(threads.begin(), threads.end(), [](std::thread& t)
+    {
+        t.join();
+    });
 }
 
 float SlimeMoldCpu::validChemo(float v) {

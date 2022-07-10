@@ -12,7 +12,8 @@ To add a custom type :
 
 enum class AgentInitPattern {
     Random,
-    Circle
+    Circle,
+    Tree
 
 };
 struct RunConfiguration {

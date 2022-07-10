@@ -26,14 +26,26 @@ std::vector<Agent> SlimeMold::initAgents() {
             agent.x = RunConfiguration::Environment::width * random->randFloat();
             agent.y = RunConfiguration::Environment::height * random->randFloat();
             break;
-        case AgentInitPattern::Circle:
+        case AgentInitPattern::Circle: {
             float circleBorderWidth = 100.0f;
             float circleRadius = 200.0f;
             float r = circleRadius + circleBorderWidth * random->randFloat();
             agent.direction = random->randomDirection();
-            agent.x = RunConfiguration::Environment::width / 2 + r * std::cos(agent.direction);
-            agent.y = RunConfiguration::Environment::height / 2 + r * std::sin(agent.direction);
-            break;
+            agent.x = RunConfiguration::Environment::width / 2 + r * std::cosf(agent.direction - static_cast<float>(Utils::PI));
+            agent.y = RunConfiguration::Environment::height / 2 + r * std::sinf(agent.direction - static_cast<float>(Utils::PI));
+        }
+        case AgentInitPattern::Tree: {
+            float distance = RunConfiguration::Environment::width / 2.0f;
+            float groupWidth = 50.0f;
+            agent.direction = random->randFloat();
+            agent.y = RunConfiguration::Environment::height * random->randFloat();
+            if (random->randFloat() > 0.5) {
+                agent.x = (RunConfiguration::Environment::width - distance) / 2.0f - groupWidth * random->randFloat();
+            }
+            else {
+                agent.x = (RunConfiguration::Environment::width + distance) / 2.0f + groupWidth * random->randFloat();
+            }
+        }
         }
     }
 

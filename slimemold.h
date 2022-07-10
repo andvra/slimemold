@@ -17,7 +17,7 @@ struct RunConfiguration {
         static const int height = 1000;
         static const int diffusionKernelSize = 3;
         static constexpr float diffusionDecay = 0.1f;
-        static const int populationSize() { return static_cast<unsigned int>(width * height * populationSizeRatio); }
+        static const int populationSize() { return static_cast<int>(width * height * populationSizeRatio); }
         static const int numPixels() { return width * height; }
         static const AgentInitPattern initPattern = AgentInitPattern::Random;
     private:

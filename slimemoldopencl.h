@@ -68,6 +68,8 @@ private:
     void loadHostMemory();
     void loadVariables();
     void loadDeviceMemoryTrailMaps();
+    // Whether a move is valid or not depends on if another agent is moving into that square.
+    //  So we need a function to synchronize movement when we have the desired movements of each agent
     void moveCoordinate();
     void moveDesiredMoves();
     void moveActualMove();

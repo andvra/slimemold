@@ -187,7 +187,7 @@ void SlimeMoldOpenCl::moveActualMove() {
 void SlimeMoldOpenCl::move() {
     //  1. (GPU) Calculate desired indices. This functions takes a result vector of size numAgents, where the value is set to its desired move idx.
     //      Keep a buffer on the gpu with desired newx/newy as float values. This will make it more efficient, not rounding all values on CPU
-    //  2. (CPU) Coordinate movements on CPU: it's made on CPU so we can get good random numbers
+    //  2. (CPU) Coordinate movements (synchronous)
     //  3. (GPU) Make actual movement, based on coordination made on CPU
 
     moveDesiredMoves();

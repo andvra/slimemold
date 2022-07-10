@@ -21,8 +21,8 @@ struct RunConfiguration {
         static const bool onlyCpu = false;
     };
     struct Environment {
-        static const int width = 1000;
-        static const int height = 1000;
+        static const int width = 1920;
+        static const int height = 1080;
         static const int diffusionKernelSize = 3;
         static constexpr float diffusionDecay = 0.1f;
         // Blending factor when blurring. 0 = no blur (keep current pixel value), 1 = use kernel output

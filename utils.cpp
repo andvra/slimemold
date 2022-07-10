@@ -24,9 +24,9 @@ float Utils::Random::randomDirection() {
     return 2.0f * static_cast<float>(PI) * randFloat();
 }
 
-void Utils::runThreaded(const std::function<void(int, int)>& fn, int elementIdxStart, int elementIdxEnd) {
+void Utils::runThreaded(const std::function<void(int, int)>& fn, int elementIdxStart, int elementIdxEndExclusive) {
     const int numThreads = std::thread::hardware_concurrency();
-    int totalElements = elementIdxEnd - elementIdxStart;
+    int totalElements = elementIdxEndExclusive - elementIdxStart;
     int batchSize = totalElements / numThreads;
     std::vector<std::thread> threads;
 

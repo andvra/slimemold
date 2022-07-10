@@ -35,7 +35,7 @@ void SlimeMoldCpu::diffusion() {
     const int kernelSize = RunConfiguration::Environment::diffusionKernelSize;
     const float diffuseRate = RunConfiguration::Environment::diffusionRatio;
 
-    auto calc = [this, kernelSize, rows, diffuseRate](int colStart, int colEndExclusive) -> void {
+    auto fn = [this, kernelSize, rows, diffuseRate](int colStart, int colEndExclusive) -> void {
         for (int col = colStart; col < colEndExclusive; col++) {
             for (int row = 0; row < rows; row++) {
                 auto idxDest = xyToSlimeArrayIdx(col, row);
@@ -49,7 +49,7 @@ void SlimeMoldCpu::diffusion() {
         }
     };
 
-    Utils::runThreaded(calc, 0, cols);
+    Utils::runThreaded(fn, 0, cols);
 }
 
 float SlimeMoldCpu::validChemo(float v) {
@@ -117,26 +117,30 @@ void SlimeMoldCpu::sense() {
     auto rotationAngle = RunConfiguration::Agent::rotationAngle;
     auto sensorAngle = RunConfiguration::Agent::sensorAngle;
 
-    for (int i = 0; i < agents.size(); i++) {
-        auto& agent = agents[i];
-        auto senseLeft = senseAtRotation(agent, -sensorAngle);
-        auto senseForward = senseAtRotation(agent, 0.0f);
-        auto senseRight = senseAtRotation(agent, sensorAngle);
+    auto fn = [this, rotationAngle, sensorAngle](int agentIdxStart, int agentIdxEnd) {
+        for (int i = agentIdxStart; i < agentIdxEnd; i++) {
+            auto& agent = agents[i];
+            auto senseLeft = senseAtRotation(agent, -sensorAngle);
+            auto senseForward = senseAtRotation(agent, 0.0f);
+            auto senseRight = senseAtRotation(agent, sensorAngle);
 
-        if (senseForward > senseLeft && senseForward > senseRight) {
-            // Do nothing
+            if (senseForward > senseLeft && senseForward > senseRight) {
+                // Do nothing
+            }
+            else if (senseForward < senseLeft && senseForward < senseRight) {
+                // Rotate in random direction
+                agent.direction += (random->randFloat() > 0.5) ? -rotationAngle : rotationAngle;
+            }
+            else if (senseLeft < senseRight) {
+                agent.direction += rotationAngle;
+            }
+            else {
+                agent.direction -= rotationAngle;
+            }
         }
-        else if (senseForward < senseLeft && senseForward < senseRight) {
-            // Rotate in random direction
-            agent.direction += (random->randFloat() > 0.5) ? -rotationAngle : rotationAngle;
-        }
-        else if (senseLeft < senseRight) {
-            agent.direction += rotationAngle;
-        }
-        else {
-            agent.direction -= rotationAngle;
-        }
-    }
+    };
+
+    Utils::runThreaded(fn, 0, static_cast<int>(agents.size()));
 }
 
 float SlimeMoldCpu::senseAtRotation(Agent& agent, float rotationOffset) {
@@ -148,12 +152,7 @@ float SlimeMoldCpu::senseAtRotation(Agent& agent, float rotationOffset) {
     int numSquares;
     measureChemoAroundPosition(x, y, sensorWidth, totalChemo, numSquares);
 
-    if (numSquares==0) {
-        return 0;
-    }
-    else {
-        return totalChemo;
-    }
+    return totalChemo;
 }
 
 void SlimeMoldCpu::measureChemoAroundPosition(int x, int y, int kernelSize, float& totalChemo, int& numMeasuresSquares) {
@@ -181,4 +180,5 @@ void SlimeMoldCpu::makeRenderImage() {
             dataTrailRender[idx] = static_cast<unsigned char>(dataTrailCurrent[idx]);
         }
     }
+
 }

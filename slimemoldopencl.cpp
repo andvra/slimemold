@@ -40,7 +40,7 @@ void SlimeMoldOpenCl::loadDeviceMemoryTrailMaps() {
 
     for (int i = 0; i < 2; i++) {
         dDataTrails.push_back(compute::vector<float>(numPixels, ctx));
-        int idx = dDataTrails.size() - 1;
+        int idx = static_cast<int>(dDataTrails.size() - 1);
         compute::fill(dDataTrails[idx].begin(), dDataTrails[idx].end(), 0.0f, queue);
     }
 }

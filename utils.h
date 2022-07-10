@@ -37,7 +37,7 @@ namespace Utils {
         std::mt19937_64 engine;
     };
 
-    extern void runThreaded(const std::function<void(int, int)>& fn, int elementIdxStart, int elementIdxEnd);
+    extern void runThreaded(const std::function<void(int, int)>& fn, int elementIdxStart, int elementIdxEndExclusive);
 };
 
 template <class T>

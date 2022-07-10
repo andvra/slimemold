@@ -12,6 +12,17 @@ namespace Utils {
 
     struct Math {
         static constexpr float deg2rad(float deg) { return static_cast<float>(PI) * deg / 180.0f; }
+        template <class T>
+        static T clamp(T min, T max, T v) {
+            if (v < min) {
+                return min;
+            }
+            else if (v > max) {
+                return max;
+            }
+
+            return v;
+        }
     };
 
     struct Random {

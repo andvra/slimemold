@@ -35,16 +35,27 @@ void SlimeMoldOpenCl::loadHostMemory() {
     hNewDirection = std::vector<float>(numAgents);
 }
 
+void SlimeMoldOpenCl::loadDeviceMemoryTrailMaps() {
+    int numPixels = RunConfiguration::Environment::numPixels();
+
+    for (int i = 0; i < 2; i++) {
+        dDataTrails.push_back(compute::vector<float>(numPixels, ctx));
+        int idx = dDataTrails.size() - 1;
+        compute::fill(dDataTrails[idx].begin(), dDataTrails[idx].end(), 0.0f, queue);
+    }
+}
+
 void SlimeMoldOpenCl::loadDeviceMemory() {
     int numPixels = RunConfiguration::Environment::numPixels();
     int numAgents = RunConfiguration::Environment::populationSize();
 
-    dDataTrails.push_back(compute::vector<float>(numPixels, ctx));
-    dDataTrails.push_back(compute::vector<float>(numPixels, ctx));
+    loadDeviceMemoryTrailMaps();
+    
     dDesiredDestinationIndices = compute::vector<int>(numAgents, ctx);
     dNewDirection = compute::vector<float>(numAgents, ctx);
     dAgentDesired = compute::vector<Agent>(numAgents, ctx);
     dRandomValues = compute::vector<float>(numAgents, ctx);
+
     loadAgents();
 }
 void SlimeMoldOpenCl::loadConfig() {
@@ -75,6 +86,7 @@ void SlimeMoldOpenCl::loadKernels() {
 
     std::vector<std::string> kernelNames = {
         "diffuse",
+        "decay",
         "move",
         "desiredMoves",
         "sense"
@@ -94,6 +106,20 @@ void SlimeMoldOpenCl::diffusion() {
     kernelDiffuse.set_arg(1, dDataTrails[idxDataTrailInUse].get_buffer());
     kernelDiffuse.set_arg(2, dDataTrails[idxDataTrailBuffer].get_buffer());
     queue.enqueue_1d_range_kernel(kernelDiffuse, 0, numPixels, 0);
+    const compute::extents<3> e = { 1,1,1 };
+    size_t globalWorkSize[] = { RunConfiguration::Environment::width, RunConfiguration::Environment::height };
+
+    queue.enqueue_nd_range_kernel(kernelDiffuse, 2, nullptr, &globalWorkSize[0], nullptr);
+
+}
+
+void SlimeMoldOpenCl::decay() {
+    int numPixels = RunConfiguration::Environment::numPixels();
+    compute::kernel& kernelDecay = kernels["decay"];
+
+    kernelDecay.set_arg(0, dConfig.get_buffer());
+    kernelDecay.set_arg(1, dDataTrails[idxDataTrailInUse].get_buffer());
+    queue.enqueue_1d_range_kernel(kernelDecay, 0, numPixels, 0);
 }
 
 void SlimeMoldOpenCl::move() {
@@ -160,7 +186,7 @@ void SlimeMoldOpenCl::makeRenderImage() {
     compute::copy(dDataTrails[idxDataTrailInUse].begin(), dDataTrails[idxDataTrailInUse].end(), dataTrailCurrentHost.begin(), queue);
 
     for (int i = 0; i < dataTrailCurrentHost.size(); i++) {
-        dataTrailRender[i] = static_cast<unsigned char>(dataTrailCurrentHost[i]);
+        dataTrailRender[i] = static_cast<unsigned char>(Utils::Math::clamp<float>(0.0f, 255.0f, dataTrailCurrentHost[i]));
     }
 }
 

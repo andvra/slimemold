@@ -1,11 +1,38 @@
 kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSource, global float* trailMapDestination)
 {
-    // TODO: Only used for clearing the image right now
-    // Continue working here!
+    size_t col = get_global_id(0);
+    size_t row = get_global_id(1);
+    int windowWidth = config[0].envWidth;
+    int windowHeight = config[0].envHeight;
+    int kernelSize = config[0].envDiffusionKernelSize;
+    size_t idxDest = col + row * windowWidth;
+
+    float chemo = 0.0f;
+    int numSquares = 0;
+
+    for (int xd = col - kernelSize / 2; xd <= col + kernelSize / 2; xd++) {
+        if (xd >= 0 && xd < windowWidth) {
+            for (int yd = row - kernelSize / 2; yd <= row + kernelSize / 2; yd++) {
+                if (yd >= 0 && yd < windowHeight) {
+                    int idxSrc = xd + windowWidth * yd;
+                    numSquares++;
+                    chemo += trailMapSource[idxSrc];
+                }
+            }
+        }
+    }
+
+    //  Why does this look "better" if we use numSquares+1 instead of numSquares?
+    trailMapDestination[idxDest] = chemo / (numSquares+1);
+
+}
+
+kernel void decay(global RunConfigurationCl* config, global float* trailMap)
+{
     size_t idx = get_global_id(0);
+    float decay = config[0].envDiffusionDecay;
 
-    trailMapSource[idx] = clamp(trailMapSource[idx] - 1.0f, 0.0f, 255.0f);
-
+    trailMap[idx] = clamp(trailMap[idx] - decay, 0.0f, 255.999f);
 }
 
 kernel void desiredMoves(global RunConfigurationCl* config, global Agent* agents, global Agent* agentsNewPos, global int* desiredDestinationIndices)
@@ -55,7 +82,7 @@ kernel void move(global RunConfigurationCl* config, global float* trailMap, glob
         int width = config[0].envWidth;
         int trailIdx = x + width * y;
         float desiredChemo = trailMap[desiredDestinationIdx] + (float)chemoDeposition;
-        trailMap[desiredDestinationIdx] = clamp(desiredChemo, 0.0f, 255.0f);
+        trailMap[desiredDestinationIdx] = clamp(desiredChemo, 0.0f, 255.999f);
     }
 }
 

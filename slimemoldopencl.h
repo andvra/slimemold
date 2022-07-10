@@ -51,7 +51,7 @@ class SlimeMoldOpenCl : public SlimeMold {
 public:
     SlimeMoldOpenCl();
     void diffusion();
-    void decay() {}
+    void decay();
     void move();
     void sense();
     void makeRenderImage();
@@ -64,6 +64,7 @@ private:
     void loadDeviceMemory();
     void loadHostMemory();
     void loadVariables();
+    void loadDeviceMemoryTrailMaps();
     std::map<std::string, compute::kernel> kernels;
     compute::context ctx;
     compute::command_queue queue;

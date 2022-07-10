@@ -15,18 +15,6 @@ bool coordValid(int x, int y) {
     return (x >= 0 && x < RunConfiguration::Environment::width&& y >= 0 && y < RunConfiguration::Environment::height);
 }
 
-template <class T>
-T clamp(T min, T max, T v) {
-    if (v < min) {
-        return min;
-    }
-    else if (v > max) {
-        return max;
-    }
-
-    return v;
-}
-
 SlimeMoldCpu::SlimeMoldCpu() : SlimeMold() {
     const int imgWidth = RunConfiguration::Environment::width;
     const int imgHeight = RunConfiguration::Environment::height;
@@ -73,7 +61,7 @@ void SlimeMoldCpu::decay() {
     const auto decay = RunConfiguration::Environment::diffusionDecay;
 
     for (int i = 0; i < numIndices; i++) {
-        dataTrailCurrent[i] = clamp<float>(0.0f, 255.999f, dataTrailCurrent[i] - decay);
+        dataTrailCurrent[i] = Utils::Math::clamp<float>(0.0f, 255.999f, dataTrailCurrent[i] - decay);
     }
 }
 
@@ -108,7 +96,7 @@ void SlimeMoldCpu::move() {
 
 void SlimeMoldCpu::deposit(int x, int y) {
     auto idx = xyToSlimeArrayIdx(x, y);
-    dataTrailCurrent[idx] = clamp<float>(0.0f, 255.999f, dataTrailCurrent[idx] + RunConfiguration::Agent::chemoDeposition);
+    dataTrailCurrent[idx] = Utils::Math::clamp<float>(0.0f, 255.999f, dataTrailCurrent[idx] + RunConfiguration::Agent::chemoDeposition);
 }
 
 void SlimeMoldCpu::swapBuffers() {

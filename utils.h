@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <random>
+#include <functional>
 
 namespace Utils {
     constexpr double PI = 3.14159265358979323846;
@@ -35,6 +36,8 @@ namespace Utils {
         std::uniform_real_distribution<float> floatDist;
         std::mt19937_64 engine;
     };
+
+    extern void runThreaded(const std::function<void(int, int)>& fn, int elementIdxStart, int elementIdxEnd);
 };
 
 template <class T>

@@ -1,5 +1,4 @@
 #include <cmath>
-#include <thread>
 
 #include "slimemoldcpu.h"
 #include "utils.h"
@@ -17,18 +16,17 @@ bool coordValid(int x, int y) {
 }
 
 SlimeMoldCpu::SlimeMoldCpu() : SlimeMold() {
-    const int imgWidth = RunConfiguration::Environment::width;
-    const int imgHeight = RunConfiguration::Environment::height;
-    dataTrailCurrent = new float[imgWidth * imgHeight]();
-    dataTrailNext = new float[imgWidth * imgHeight]();
-    squareTaken = new bool[imgWidth * imgHeight];
+    const int numPixels = RunConfiguration::Environment::numPixels();
+
+    dataTrailCurrent = new float[numPixels]();
+    dataTrailNext = new float[numPixels]();
+    squareTaken = std::vector<bool>(numPixels);
     agents = initAgents();
 }
 
 SlimeMoldCpu::~SlimeMoldCpu() {
     delete[] dataTrailCurrent;
     delete[] dataTrailNext;
-    delete[] squareTaken;
 }
 
 void SlimeMoldCpu::diffusion() {
@@ -36,11 +34,8 @@ void SlimeMoldCpu::diffusion() {
     const auto rows = RunConfiguration::Environment::height;
     const int kernelSize = RunConfiguration::Environment::diffusionKernelSize;
     const float diffuseRate = RunConfiguration::Environment::diffusionRatio;
-    const int numThreads = std::thread::hardware_concurrency();
-    int numCols = cols / numThreads;
-    std::vector<std::thread> threads;
 
-    auto calc = [this, kernelSize, rows, diffuseRate](int colStart, int colEndExclusive) {
+    auto calc = [this, kernelSize, rows, diffuseRate](int colStart, int colEndExclusive) -> void {
         for (int col = colStart; col < colEndExclusive; col++) {
             for (int row = 0; row < rows; row++) {
                 auto idxDest = xyToSlimeArrayIdx(col, row);
@@ -54,16 +49,7 @@ void SlimeMoldCpu::diffusion() {
         }
     };
 
-    for (int idxThread = 0; idxThread < numThreads; idxThread++) {
-        auto colStart = idxThread * numCols;
-        auto colEndExclusive = std::min(cols, (idxThread + 1) * numCols);
-        threads.push_back(std::thread(calc, colStart, colEndExclusive));
-    }
-
-    std::for_each(threads.begin(), threads.end(), [](std::thread& t)
-    {
-        t.join();
-    });
+    Utils::runThreaded(calc, 0, cols);
 }
 
 float SlimeMoldCpu::validChemo(float v) {
@@ -81,22 +67,28 @@ void SlimeMoldCpu::decay() {
 
 void SlimeMoldCpu::move() {
     auto moveOrder = getAgentMoveOrder();
-    
-    for (int i = 0; i < RunConfiguration::Environment::width * RunConfiguration::Environment::height; i++) {
+    auto stepSize = RunConfiguration::Agent::stepSize;
+    auto width = RunConfiguration::Environment::width;
+    auto height = RunConfiguration::Environment::height;
+    auto numPixels = RunConfiguration::Environment::numPixels();
+
+    for (int i = 0; i < numPixels; i++) {
         squareTaken[i] = false;
     }
 
+    std::fill(squareTaken.begin(), squareTaken.end(), false);
+
     for (int i = 0; i < agents.size(); i++) {
         auto& agent = agents[moveOrder[i]];
-        auto newX = agent.x + std::cos(agent.direction) * RunConfiguration::Agent::stepSize;
-        auto newY = agent.y + std::sin(agent.direction) * RunConfiguration::Agent::stepSize;
+        auto newX = agent.x + std::cos(agent.direction) * stepSize;
+        auto newY = agent.y + std::sin(agent.direction) * stepSize;
         auto newXSquare = static_cast<int>(newX);
         auto newYSquare = static_cast<int>(newY);
-        auto trailIdx = newXSquare + newYSquare * RunConfiguration::Environment::width;
+        auto trailIdx = newXSquare + newYSquare * width;
         if (newX >= 0
-            && newX < RunConfiguration::Environment::width
+            && newX < width
             && newY >= 0
-            && newY < RunConfiguration::Environment::height
+            && newY < height
             && !squareTaken[trailIdx]
             ) {
             agent.x = newX;
@@ -111,8 +103,10 @@ void SlimeMoldCpu::move() {
 }
 
 void SlimeMoldCpu::deposit(int x, int y) {
+    auto chemoDeposition = RunConfiguration::Agent::chemoDeposition;
     auto idx = xyToSlimeArrayIdx(x, y);
-    dataTrailCurrent[idx] = validChemo(dataTrailCurrent[idx] + RunConfiguration::Agent::chemoDeposition);
+
+    dataTrailCurrent[idx] = validChemo(dataTrailCurrent[idx] + chemoDeposition);
 }
 
 void SlimeMoldCpu::swapBuffers() {
@@ -121,11 +115,13 @@ void SlimeMoldCpu::swapBuffers() {
 
 void SlimeMoldCpu::sense() {
     auto rotationAngle = RunConfiguration::Agent::rotationAngle;
+    auto sensorAngle = RunConfiguration::Agent::sensorAngle;
+
     for (int i = 0; i < agents.size(); i++) {
         auto& agent = agents[i];
-        auto senseLeft = senseAtRotation(agent, -RunConfiguration::Agent::sensorAngle);
+        auto senseLeft = senseAtRotation(agent, -sensorAngle);
         auto senseForward = senseAtRotation(agent, 0.0f);
-        auto senseRight = senseAtRotation(agent, RunConfiguration::Agent::sensorAngle);
+        auto senseRight = senseAtRotation(agent, sensorAngle);
 
         if (senseForward > senseLeft && senseForward > senseRight) {
             // Do nothing
@@ -144,12 +140,13 @@ void SlimeMoldCpu::sense() {
 }
 
 float SlimeMoldCpu::senseAtRotation(Agent& agent, float rotationOffset) {
-    int x = static_cast<int>(agent.x + RunConfiguration::Agent::sensorOffset * std::cos(agent.direction + rotationOffset));
-    int y = static_cast<int>(agent.y + RunConfiguration::Agent::sensorOffset * std::sin(agent.direction + rotationOffset));
+    auto x = static_cast<int>(agent.x + RunConfiguration::Agent::sensorOffset * std::cos(agent.direction + rotationOffset));
+    auto y = static_cast<int>(agent.y + RunConfiguration::Agent::sensorOffset * std::sin(agent.direction + rotationOffset));
+    auto sensorWidth = RunConfiguration::Agent::sensorWidth;
 
     float totalChemo;
     int numSquares;
-    measureChemoAroundPosition(x, y, RunConfiguration::Agent::sensorWidth, totalChemo, numSquares);
+    measureChemoAroundPosition(x, y, sensorWidth, totalChemo, numSquares);
 
     if (numSquares==0) {
         return 0;

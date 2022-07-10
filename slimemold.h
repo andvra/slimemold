@@ -9,6 +9,7 @@ enum class AgentInitPattern {
 };
 struct RunConfiguration {
     struct Hardware {
+        // True = CPU, false = OpenCL
         static const bool onlyCpu = false;
     };
     struct Environment {

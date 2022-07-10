@@ -142,6 +142,7 @@ void SlimeMoldOpenCl::moveCoordinate() {
             hNewDirection[idx] = random->randomDirection();
         }
         else if (hTakenMap[desiredPos] == 0) {
+            // Square is available, so agent will move as desired
             hTakenMap[desiredPos] = 1;
         }
         else {

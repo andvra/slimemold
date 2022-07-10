@@ -20,6 +20,7 @@ private:
     bool* squareTaken;
     std::vector<Agent> agents;
     float senseAtRotation(Agent& agent, float rotationOffset);
+    void measureChemoAroundPosition(int x, int y, int kernelSize, float& totalChemo, int& numMeasuresSquares);
     void deposit(int x, int y);
 };
 

@@ -8,7 +8,7 @@ int xyToSlimeArrayIdx(float x, float y) {
 }
 
 int xyToSlimeArrayIdx(int x, int y) {
-    return static_cast<int>(x + y * RunConfiguration::Environment::width);
+    return x + y * RunConfiguration::Environment::width;
 }
 
 bool coordValid(int x, int y) {
@@ -38,20 +38,10 @@ void SlimeMoldCpu::diffusion() {
     for (int col = 0; col < cols; col++) {
         for (int row = 0; row < rows; row++) {
             auto idxDest = xyToSlimeArrayIdx(col, row);
-            float chemo = 0.0f;
-            int numSquares = 0;
-            for (int xd = col - kernelSize / 2; xd <= col + kernelSize / 2; xd++) {
-                if (xd >= 0 && xd < cols) {
-                    for (int yd = row - kernelSize / 2; yd <= row + kernelSize / 2; yd++) {
-                        if (yd >= 0 && yd < rows) {
-                            auto idxSrc = xyToSlimeArrayIdx(xd, yd);
-                            numSquares++;
-                            chemo += dataTrailCurrent[idxSrc];
-                        }
-                    }
-                }
-            }
-            dataTrailNext[idxDest] = chemo / numSquares;
+            float totalChemo;
+            int numMeasuredSquares;
+            measureChemoAroundPosition(col, row, kernelSize, totalChemo, numMeasuredSquares);
+            dataTrailNext[idxDest] = totalChemo / (numMeasuredSquares+1);
         }
     }
 }
@@ -131,11 +121,31 @@ float SlimeMoldCpu::senseAtRotation(Agent& agent, float rotationOffset) {
     int x = static_cast<int>(agent.x + RunConfiguration::Agent::sensorOffset * std::cos(agent.direction + rotationOffset));
     int y = static_cast<int>(agent.y + RunConfiguration::Agent::sensorOffset * std::sin(agent.direction + rotationOffset));
 
-    if (coordValid(x, y)) {
-        return dataTrailCurrent[xyToSlimeArrayIdx(x, y)];
-    }
+    float totalChemo;
+    int numSquares;
+    measureChemoAroundPosition(x, y, RunConfiguration::Agent::sensorWidth, totalChemo, numSquares);
 
-    return 0;
+    if (numSquares==0) {
+        return 0;
+    }
+    else {
+        return totalChemo;
+    }
+}
+
+void SlimeMoldCpu::measureChemoAroundPosition(int x, int y, int kernelSize, float& totalChemo, int& numMeasuresSquares) {
+    totalChemo = 0.0f;
+    numMeasuresSquares = 0;
+
+    for (int xd = x - kernelSize / 2; xd <= x + kernelSize / 2; xd++) {
+        for (int yd = y - kernelSize / 2; yd <= y + kernelSize / 2; yd++) {
+            if (coordValid(xd, yd)) {
+                auto idxSrc = xyToSlimeArrayIdx(xd, yd);
+                numMeasuresSquares++;
+                totalChemo += dataTrailCurrent[idxSrc];
+            }
+        }
+    }
 }
 
 void SlimeMoldCpu::makeRenderImage() {

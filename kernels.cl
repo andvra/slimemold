@@ -1,3 +1,24 @@
+kernel void measureChemoAroundPosition(global RunConfigurationCl* config, float* trailMap, int x, int y, int kernelSize, float* totalChemo, int* numMeasuredSquares) 
+{
+    int windowWidth = config[0].envWidth;
+    int windowHeight = config[0].envHeight;
+
+    *totalChemo = 0.0f;
+    *numMeasuredSquares = 0;
+
+    for (int xd = x - kernelSize / 2; xd <= x + kernelSize / 2; xd++) {
+        if (xd >= 0 && xd < windowWidth) {
+            for (int yd = y - kernelSize / 2; yd <= y + kernelSize / 2; yd++) {
+                if (yd >= 0 && yd < windowHeight) {
+                    int idxSrc = xd + windowWidth * yd;
+                    *numMeasuredSquares = *numMeasuredSquares + 1;
+                    *totalChemo += trailMap[idxSrc];
+                }
+            }
+        }
+    }
+}
+
 kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSource, global float* trailMapDestination)
 {
     size_t col = get_global_id(0);
@@ -10,17 +31,7 @@ kernel void diffuse(global RunConfigurationCl* config, global float* trailMapSou
     float chemo = 0.0f;
     int numSquares = 0;
 
-    for (int xd = col - kernelSize / 2; xd <= col + kernelSize / 2; xd++) {
-        if (xd >= 0 && xd < windowWidth) {
-            for (int yd = row - kernelSize / 2; yd <= row + kernelSize / 2; yd++) {
-                if (yd >= 0 && yd < windowHeight) {
-                    int idxSrc = xd + windowWidth * yd;
-                    numSquares++;
-                    chemo += trailMapSource[idxSrc];
-                }
-            }
-        }
-    }
+    measureChemoAroundPosition(config, trailMapSource, col, row, kernelSize, &chemo, &numSquares);
 
     //  Why does this look "better" if we use numSquares+1 instead of numSquares?
     trailMapDestination[idxDest] = chemo / (numSquares+1);
@@ -70,11 +81,12 @@ kernel void move(global RunConfigurationCl* config, global float* trailMap, glob
 
     int desiredDestinationIdx = desiredDestinationIndices[idx];
 
-    // -1 means we could not move
     if(desiredDestinationIdx == -1) {
+        // -1 means we could not move. Update agent direction to new random direction, sent from host
         agents[idx].direction = newDirections[idx];
     }
     else {
+        // We can move! We've already calculated the move, so just copy it.
         agents[idx].x = agentsNewPos[idx].x;
         agents[idx].y = agentsNewPos[idx].y;
         int x = agents[idx].x;
@@ -91,18 +103,19 @@ kernel void senseAtRotation(global RunConfigurationCl* config, global float* tra
     int sensorOffset = config[0].agentSensorOffset;
     int width = config[0].envWidth;
     int height = config[0].envHeight;
+    int sensorWidth = config[0].agentSensorWidth;
 
     int x = agents[agentIdx].x + sensorOffset * cos(agents[agentIdx].direction + rotationOffset);
     int y = agents[agentIdx].y + sensorOffset * sin(agents[agentIdx].direction + rotationOffset);
 
+    float chemo;
+    int numSquares;
+
+    measureChemoAroundPosition(config, trailMap, x, y, sensorWidth, &chemo, &numSquares);
+
     // Check if position is valid
-    if(x>= 0 && x<width && y>=0 && y<height) {
-        int idx = x + y * width;
-        *res = trailMap[idx];
-    }
-    else {
-        *res = 0.0f;
-    }
+    int idx = x + y * width;
+    *res = chemo;
 }
 
 kernel void sense(global RunConfigurationCl* config, global float* trailMap, global Agent* agents, global float* randomValues)

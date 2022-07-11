@@ -211,6 +211,7 @@ void SlimeMoldOpenCl::sense() {
     compute::kernel& kernelSense = kernels["sense"];
     std::vector<float> hRandomValues(numAgents);
 
+    // TODO: Move to GPU, use a hash function such as www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
     for (auto& f : hRandomValues) {
         f = random->randFloat();
     }

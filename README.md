@@ -8,8 +8,7 @@ This project is based on [this](https://uwe-repository.worktribe.com/output/9805
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+A solution file for Visual Studio 2022 is included in the repo.
 
 ### Prerequisites
 

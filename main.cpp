@@ -5,6 +5,7 @@
 #include "slimemoldcpu.h"
 #include "slimemoldopencl.h"
 #include "runstatistics.h"
+#include "videorecorder.h"
 
 int main()
 {
@@ -27,12 +28,20 @@ int main()
 
     cv::namedWindow(windowId);
 
+    //VideoRecorder videoRecorder("running.mp4", 30, RunConfiguration::Environment::width, RunConfiguration::Environment::height, 2);
+    //// Save every nth frame
+    //int frameSaveFrequency = 25;
+
     while (!done) {
         slimeMold->run();
 
         cv::imshow(windowId, imgTrail);
 
         auto kc = cv::waitKey(1);
+
+        //if (stats.getSteps() % frameSaveFrequency == 0) {
+        //    videoRecorder.writeFrame(imgTrail);
+        //}
 
         if (kc == 27) {
             done = true;

@@ -146,6 +146,7 @@
     <ClCompile Include="slimemoldcpu.cpp" />
     <ClCompile Include="slimemoldopencl.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="videorecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="kernels.cl" />
@@ -157,6 +158,7 @@
     <ClInclude Include="slimemoldcpu.h" />
     <ClInclude Include="slimemoldopencl.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="videorecorder.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

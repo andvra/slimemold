@@ -25,6 +25,8 @@ int main()
     // The image is just a wrapper over the trail data
     cv::Mat imgTrail = cv::Mat(height, width, CV_8UC1, slimeMold->getDataTrailRender());
 
+    cv::namedWindow(windowId);
+
     while (!done) {
         slimeMold->run();
 

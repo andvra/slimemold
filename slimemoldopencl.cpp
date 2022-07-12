@@ -33,6 +33,7 @@ void SlimeMoldOpenCl::loadHostMemory() {
     hTakenMap = std::vector<unsigned char>(numPixels);
     hDesiredDestinationIdx = std::vector<int>(numAgents);
     hNewDirection = std::vector<float>(numAgents);
+    hDataTrailCurrent = std::vector<float>(numPixels);
 }
 
 void SlimeMoldOpenCl::loadDeviceMemoryTrailMaps() {
@@ -101,16 +102,13 @@ void SlimeMoldOpenCl::diffusion() {
 
     int numPixels = RunConfiguration::Environment::numPixels();
     compute::kernel& kernelDiffuse = kernels["diffuse"];
+    size_t globalWorkSize[] = { RunConfiguration::Environment::width, RunConfiguration::Environment::height };
 
     kernelDiffuse.set_arg(0, dConfig.get_buffer());
     kernelDiffuse.set_arg(1, dDataTrails[idxDataTrailInUse].get_buffer());
     kernelDiffuse.set_arg(2, dDataTrails[idxDataTrailBuffer].get_buffer());
-    queue.enqueue_1d_range_kernel(kernelDiffuse, 0, numPixels, 0);
-    const compute::extents<3> e = { 1,1,1 };
-    size_t globalWorkSize[] = { RunConfiguration::Environment::width, RunConfiguration::Environment::height };
 
     queue.enqueue_nd_range_kernel(kernelDiffuse, 2, nullptr, &globalWorkSize[0], nullptr);
-
 }
 
 void SlimeMoldOpenCl::decay() {
@@ -197,13 +195,16 @@ void SlimeMoldOpenCl::move() {
 
 void SlimeMoldOpenCl::makeRenderImage() {
     int numPixels = RunConfiguration::Environment::numPixels();
-    std::vector<float> dataTrailCurrentHost(numPixels);
 
-    compute::copy(dDataTrails[idxDataTrailInUse].begin(), dDataTrails[idxDataTrailInUse].end(), dataTrailCurrentHost.begin(), queue);
+    compute::copy(dDataTrails[idxDataTrailInUse].begin(), dDataTrails[idxDataTrailInUse].end(), hDataTrailCurrent.begin(), queue);
 
-    for (int i = 0; i < dataTrailCurrentHost.size(); i++) {
-        dataTrailRender[i] = static_cast<unsigned char>(Utils::Math::clamp<float>(0.0f, 255.0f, dataTrailCurrentHost[i]));
-    }
+    auto fn = [this](int idxStart, int idxEndExclusive) -> void {
+        for (int i = idxStart; i < idxEndExclusive; i++) {
+            dataTrailRender[i] = static_cast<unsigned char>(Utils::Math::clamp<float>(0.0f, 255.0f, hDataTrailCurrent[i]));
+        }
+    };
+
+    Utils::runThreaded(fn, 0, numPixels);
 }
 
 void SlimeMoldOpenCl::sense() {

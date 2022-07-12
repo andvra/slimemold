@@ -90,6 +90,7 @@ private:
     compute::vector<RunConfigurationCl> dConfig;
     std::vector<unsigned char> hTakenMap;
     std::vector<int> hDesiredDestinationIdx;
+    std::vector<float> hDataTrailCurrent;
     // New random directions, sent to device
     std::vector<float> hNewDirection;
     int idxDataTrailInUse, idxDataTrailBuffer;

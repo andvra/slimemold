@@ -1,7 +1,7 @@
 kernel void validChemo(global RunConfigurationCl* config, float* chemo)
 {
-    //float maxTotalChemo = config[0].agentMaxTotalChemo;
-    //clamp(*chemo, 0.0f, maxTotalChemo);
+    float maxTotalChemo = config[0].agentMaxTotalChemo;
+    clamp(*chemo, 0.0f, maxTotalChemo);
 }
 
 kernel void measureChemoAroundPosition(global RunConfigurationCl* config, float* trailMap, int x, int y, int kernelSize, float* totalChemo, int* numMeasuredSquares) 
